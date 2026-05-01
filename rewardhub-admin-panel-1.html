@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RewardHub — Admin Panel</title>
+    <!-- Firebase v8 CDN -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #3730A3;
+            --secondary: #7C3AED;
+            --success: #059669;
+            --warning: #D97706;
+            --danger: #DC2626;
+            --dark: #111827;
+            --gray: #6B7280;
+            --light-gray: #F3F4F6;
+            --border: #E5E7EB;
+            --sidebar-bg: #0F172A;
+            --sidebar-text: #94A3B8;
+            --sidebar-active: #4F46E5;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #F8FAFC;
+            color: var(--dark);
+            min-height: 100vh;
+        }
+
+        /* ===== ADMIN LOGIN ===== */
+        #adminLoginPage {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%);
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 20px;
+            padding: 48px 40px;
+            width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .login-logo-icon {
+            font-size: 48px;
+            display: block;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--dark);
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .login-subtitle {
+            font-size: 13px;
+            color: var(--gray);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .admin-badge {
+            display: inline-block;
+            background: #FEF3C7;
+            color: #92400E;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            margin: 0 auto 20px;
+            display: block;
+            text-align: center;
+            width: fit-content;
+            margin: 0 auto 24px;
+        }
+
+        .form-field {
+            margin-bottom: 16px;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 6px;
+        }
+
+        .form-field input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--dark);
+            transition: border-color 0.2s;
+        }
+
+        .form-field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .login-btn:hover { opacity: 0.9; }
+
+        .security-note {
+            background: #FEF2F2;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 11px;
+            color: #991B1B;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* ===== ADMIN DASHBOARD ===== */
+        #adminDashboard {
+            display: none;
+            flex-direction: row;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            min-height: 100vh;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 28px 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .sidebar-logo-text {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-admin-tag {
+            font-size: 10px;
+            background: rgba(79,70,229,0.3);
+            color: #818CF8;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            display: block;
+            margin-top: 4px;
+        }
+
+        .sidebar-nav { flex: 1; padding: 16px 10px; }
+
+        .nav-section-label {
+            font-size: 10px;
+            color: #475569;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 10px 4px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--sidebar-text);
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-bottom: 2px;
+            position: relative;
+        }
+
+        .sidebar-item:hover { background: rgba(255,255,255,0.06); color: white; }
+
+        .sidebar-item.active {
+            background: rgba(79,70,229,0.2);
+            color: #818CF8;
+        }
+
+        .sidebar-item .badge {
+            position: absolute;
+            right: 12px;
+            background: var(--danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-item .s-icon { font-size: 16px; width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-avatar {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; color: white; font-weight: 700;
+        }
+
+        .admin-name { font-size: 13px; font-weight: 700; color: white; }
+        .admin-role { font-size: 11px; color: #64748B; }
+
+        .logout-btn {
+            width: 100%;
+            padding: 8px;
+            background: rgba(220,38,38,0.15);
+            color: #F87171;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover { background: rgba(220,38,38,0.25); }
+
+        /* MAIN CONTENT */
+        .main-content {
+            margin-left: 240px;
+            flex: 1;
+            min-height: 100vh;
+        }
+
+        .top-bar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .page-title { font-size: 20px; font-weight: 800; }
+        .page-subtitle { font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+        .top-bar-actions { display: flex; gap: 10px; align-items: center; }
+
+        /* PAGES */
+        .page { display: none; padding: 28px; }
+        .page.active { display: block; }
+
+        /* STATS CARDS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card-icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card-num {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .stat-card-label {
+            font-size: 12px;
+            color: var(--gray);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .stat-card-change {
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+        .change-up { color: var(--success); }
+        .change-pending { color: var(--warning); }
+
+        /* TABLE */
+        .table-container {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title { font-size: 15px; font-weight: 700; }
+
+        .table-filters { display: flex; gap: 8px; }
+
+        .filter-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            background: white;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+            color: var(--gray);
+            transition: all 0.2s;
+        }
+        .filter-btn.active, .filter-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #FAFAFA;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid #f5f5f5;
+            vertical-align: middle;
+        }
+
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: #FAFAFA; }
+
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .user-avatar {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .user-name { font-weight: 700; }
+        .user-email { font-size: 11px; color: var(--gray); }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-approved { background: #D1FAE5; color: #065F46; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .action-btn:hover { opacity: 0.8; }
+        .btn-approve { background: #D1FAE5; color: #065F46; }
+        .btn-reject { background: #FEE2E2; color: #991B1B; }
+        .btn-view { background: #EEF2FF; color: var(--primary); }
+
+        /* ===== CAMPAIGNS MANAGEMENT ===== */
+        .add-btn {
+            padding: 10px 18px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* MODAL */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-backdrop.open { display: flex; }
+
+        .modal-box {
+            background: white;
+            border-radius: 18px;
+            padding: 32px;
+            width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+
+        .modal-box-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: var(--light-gray);
+            border: none;
+            border-radius: 8px;
+            width: 30px; height: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--dark);
+            transition: border-color 0.2s;
+        }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .toggle-input { display: none; }
+
+        .toggle-slider {
+            width: 40px; height: 22px;
+            background: #CBD5E1;
+            border-radius: 11px;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .toggle-slider::after {
+            content: '';
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 16px; height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .toggle-input:checked + .toggle-slider { background: var(--primary); }
+        .toggle-input:checked + .toggle-slider::after { transform: translateX(18px); }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-save {
+            flex: 1; padding: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+        }
+
+        .btn-cancel-modal {
+            padding: 12px 20px;
+            background: var(--light-gray);
+            color: var(--gray);
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+        }
+
+        /* SCREENSHOT MODAL */
+        .screenshot-modal-img {
+            width: 100%;
+            border-radius: 10px;
+            max-height: 500px;
+            object-fit: contain;
+        }
+
+        /* USER TABLE */
+        .reward-input {
+            width: 80px;
+            padding: 5px 8px;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--dark);
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            animation: slideInRight 0.3s ease;
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .toast-success { background: #065F46; color: white; }
+        .toast-error { background: #991B1B; color: white; }
+        .toast-info { background: var(--primary); color: white; }
+
+        /* LOADING */
+        .loading-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.3);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .loading-overlay.active { display: flex; }
+        .spinner {
+            width: 44px; height: 44px;
+            border: 4px solid rgba(79,70,229,0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Empty state */
+        .empty-row td {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Notification dot */
+        .notif-dot {
+            width: 8px; height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            position: absolute;
+            top: 8px; right: 8px;
+        }
+
+        @media (max-width: 1200px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+</div>
+
+<!-- ===== ADMIN LOGIN ===== -->
+<div id="adminLoginPage">
+    <div class="login-box">
+        <div class="login-logo"><span class="login-logo-icon">🛡️</span></div>
+        <div class="login-title">Admin Panel</div>
+        <div class="login-subtitle">RewardHub — Secure Admin Access</div>
+        <div class="admin-badge">🔐 Authorized Personnel Only</div>
+
+        <div class="form-field">
+            <label>Admin Email</label>
+            <input type="email" id="adminEmail" placeholder="admin@rewardhub.com">
+        </div>
+        <div class="form-field">
+            <label>Password</label>
+            <input type="password" id="adminPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') adminLogin()">
+        </div>
+        <button class="login-btn" onclick="adminLogin()">🔐 Admin Login</button>
+
+        <div class="security-note">
+            ⚠️ Yeh page sirf authorized admins ke liye hai. Unauthorized access report kiya jaega.
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADMIN DASHBOARD ===== -->
+<div id="adminDashboard" style="display:none; flex-direction:row;">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-text">🎁 RewardHub</div>
+            <span class="sidebar-admin-tag">ADMIN PANEL</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Overview</div>
+            <div class="sidebar-item active" onclick="showPage('pageOverview', this)">
+                <span class="s-icon">📊</span> Dashboard
+            </div>
+
+            <div class="nav-section-label" style="margin-top:10px;">Management</div>
+            <div class="sidebar-item" onclick="showPage('pageSubmissions', this)" id="navSubmissions">
+                <span class="s-icon">📋</span> Submissions
+                <span class="badge" id="pendingBadge">0</span>
+            </div>
+            <div class="sidebar-item" onclick="showPage('pageCampaigns', this)">
+                <span class="s-icon">🔥</span> Campaigns
+            </div>
+            <div class="sidebar-item" onclick="showPage('pageUsers', this)">
+                <span class="s-icon">👥</span> Users
+            </div>
+            <div class="sidebar-item" onclick="showPage('pagePayouts', this)">
+                <span class="s-icon">💰</span> Payouts
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="admin-info">
+                <div class="admin-avatar" id="adminAvatar">A</div>
+                <div>
+                    <div class="admin-name" id="adminName">Admin</div>
+                    <div class="admin-role">Super Admin</div>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="adminLogout()">🚪 Logout</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+        <!-- TOP BAR -->
+        <div class="top-bar">
+            <div>
+                <div class="page-title" id="topBarTitle">Dashboard</div>
+                <div class="page-subtitle" id="topBarSub">RewardHub ka poora control</div>
+            </div>
+            <div class="top-bar-actions">
+                <div style="font-size: 12px; color: var(--gray); font-weight: 600;" id="liveClock"></div>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: OVERVIEW ===== -->
+        <div class="page active" id="pageOverview">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-icon">📋</div>
+                    <div class="stat-card-num" id="statTotalSubs">0</div>
+                    <div class="stat-card-label">Total Submissions</div>
+                    <div class="stat-card-change change-pending" id="statPendingCount">0 pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon">✅</div>
+                    <div class="stat-card-num" id="statApprovedSubs">0</div>
+                    <div class="stat-card-label">Approved</div>
+                    <div class="stat-card-change change-up">Review approved</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon">👥</div>
+                    <div class="stat-card-num" id="statTotalUsers">0</div>
+                    <div class="stat-card-label">Registered Users</div>
+                    <div class="stat-card-change change-up">Total members</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon">💸</div>
+                    <div class="stat-card-num" id="statTotalPaid">₹0</div>
+                    <div class="stat-card-label">Total Rewards Given</div>
+                    <div class="stat-card-change change-up">Earnings paid out</div>
+                </div>
+            </div>
+
+            <!-- Recent Pending Submissions -->
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">⏳ Abhi Pending Submissions</div>
+                    <button class="action-btn btn-view" onclick="showPage('pageSubmissions', document.getElementById('navSubmissions'))">Sab dekhein →</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Campaign</th>
+                            <th>Reward</th>
+                            <th>Time</th>
+                            <th>Screenshot</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="overviewPendingTable">
+                        <tr class="empty-row"><td colspan="6">⏳ Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: SUBMISSIONS ===== -->
+        <div class="page" id="pageSubmissions">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">📋 Sab Submissions</div>
+                    <div class="table-filters">
+                        <button class="filter-btn active" onclick="filterSubmissions('all', this)">All</button>
+                        <button class="filter-btn" onclick="filterSubmissions('pending', this)">⏳ Pending</button>
+                        <button class="filter-btn" onclick="filterSubmissions('approved', this)">✅ Approved</button>
+                        <button class="filter-btn" onclick="filterSubmissions('rejected', this)">❌ Rejected</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Campaign</th>
+                            <th>Reward</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Screenshot</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="submissionsTable">
+                        <tr class="empty-row"><td colspan="7">⏳ Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: CAMPAIGNS ===== -->
+        <div class="page" id="pageCampaigns">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">🔥 Campaigns Manage Karen</div>
+                    <button class="add-btn" onclick="openCampaignModal()">+ Naya Campaign</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>App Name</th>
+                            <th>Reward</th>
+                            <th>Review Text</th>
+                            <th>Status</th>
+                            <th>Submissions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="campaignsTable">
+                        <tr class="empty-row"><td colspan="6">⏳ Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: USERS ===== -->
+        <div class="page" id="pageUsers">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">👥 Registered Users</div>
+                    <div style="font-size: 13px; color: var(--gray); font-weight: 600;" id="usersCount">0 users</div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Phone</th>
+                            <th>Wallet</th>
+                            <th>Total Earned</th>
+                            <th>Submissions</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                        <tr class="empty-row"><td colspan="7">⏳ Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: PAYOUTS ===== -->
+        <div class="page" id="pagePayouts">
+            <div style="background: white; border-radius: 14px; border: 1px solid var(--border); padding: 24px; margin-bottom: 20px;">
+                <div style="font-size: 16px; font-weight: 800; margin-bottom: 6px;">💰 Manual Wallet Adjustment</div>
+                <div style="font-size: 12px; color: var(--gray); margin-bottom: 20px;">Kisi bhi user ka wallet manually update karein</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>User Select Karein</label>
+                        <select id="payoutUserSelect">
+                            <option value="">-- User Choose Karein --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (₹)</label>
+                        <input type="number" id="payoutAmount" placeholder="e.g. 50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Action</label>
+                    <select id="payoutAction">
+                        <option value="add">➕ Add to Wallet</option>
+                        <option value="deduct">➖ Deduct from Wallet</option>
+                        <option value="set">📌 Set Exact Amount</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Note (optional)</label>
+                    <input type="text" id="payoutNote" placeholder="e.g. Bonus, Penalty, Manual adjustment...">
+                </div>
+                <button class="btn-save" style="width:auto; padding: 11px 24px;" onclick="processManualPayout()">
+                    💰 Apply Now
+                </button>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">📊 Users Wallet Overview</div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Current Wallet</th>
+                            <th>Total Earned</th>
+                            <th>Approved Reviews</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payoutsTable">
+                        <tr class="empty-row"><td colspan="4">⏳ Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- end main-content -->
+</div><!-- end adminDashboard -->
+
+<!-- ===== CAMPAIGN MODAL ===== -->
+<div class="modal-backdrop" id="campaignModal">
+    <div class="modal-box">
+        <div class="modal-box-title">
+            <span id="campaignModalTitle">🔥 Naya Campaign</span>
+            <button class="modal-close" onclick="closeCampaignModal()">✕</button>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>App Name *</label>
+                <input type="text" id="cName" placeholder="e.g. Zomato, Swiggy">
+            </div>
+            <div class="form-group">
+                <label>Icon (Emoji) *</label>
+                <input type="text" id="cIcon" placeholder="e.g. 🍕">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Reward Amount (₹) *</label>
+                <input type="number" id="cReward" placeholder="e.g. 25">
+            </div>
+            <div class="form-group">
+                <label>Available Slots</label>
+                <input type="number" id="cSlots" placeholder="Leave blank for unlimited">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Play Store Link</label>
+            <input type="url" id="cPlaystore" placeholder="https://play.google.com/store/apps/...">
+        </div>
+
+        <div class="form-group">
+            <label>Review Text (jo user ko copy karna hai) *</label>
+            <textarea id="cReviewText" placeholder="Yahan wo review text likhein jo users ko Play Store par paste karna hai..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Extra Instructions (optional)</label>
+            <textarea id="cInstructions" placeholder="Koi special instructions..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label style="display:flex; align-items:center; gap:10px;">
+                <label class="toggle-switch">
+                    <input type="checkbox" class="toggle-input" id="cActive" checked>
+                    <div class="toggle-slider"></div>
+                </label>
+                Campaign Active hai
+            </label>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-cancel-modal" onclick="closeCampaignModal()">Cancel</button>
+            <button class="btn-save" onclick="saveCampaign()">💾 Save Campaign</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SCREENSHOT VIEWER MODAL ===== -->
+<div class="modal-backdrop" id="screenshotModal">
+    <div class="modal-box" style="width: 560px;">
+        <div class="modal-box-title">
+            <span>📸 Screenshot Review</span>
+            <button class="modal-close" onclick="closeScreenshotModal()">✕</button>
+        </div>
+        <div style="margin-bottom: 16px; padding: 12px; background: var(--light-gray); border-radius: 10px; font-size: 13px;">
+            <div><strong>User:</strong> <span id="modalUserName">-</span></div>
+            <div><strong>Campaign:</strong> <span id="modalCampaign">-</span></div>
+            <div><strong>Reward:</strong> ₹<span id="modalReward">-</span></div>
+        </div>
+        <img class="screenshot-modal-img" id="modalScreenshot" src="" alt="Screenshot">
+        <div class="form-group" style="margin-top:16px;">
+            <label>Admin Note (optional)</label>
+            <input type="text" id="modalNote" placeholder="Koi comment...">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel-modal" onclick="closeScreenshotModal()">Close</button>
+            <button class="action-btn btn-reject" style="padding:12px 20px;" onclick="rejectFromModal()">❌ Reject</button>
+            <button class="action-btn btn-approve" style="padding:12px 20px;" onclick="approveFromModal()">✅ Approve</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // FIREBASE CONFIG — SAME AS USER APP
+    // ============================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyBfKqsFJi3ffRMQH2MyosEAL3eiqolxtGw",
+        authDomain: "app-review-3ff21.firebaseapp.com",
+        projectId: "app-review-3ff21",
+        storageBucket: "app-review-3ff21.appspot.com",
+        messagingSenderId: "967528252595",
+        appId: "1:967528252595:web:e7ec03890e05825f551cc6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // ============================================
+    // ADMIN EMAIL LIST — YAHAN APNA ADMIN EMAIL DAALO
+    // ============================================
+    const ADMIN_EMAILS = [
+        'sumitkumarbihariara@gmail.com',
+    ];
+
+    // ============================================
+    // GLOBAL STATE
+    // ============================================
+    let allSubmissions = [];
+    let currentFilter = 'all';
+    let editingCampaignId = null;
+    let currentModalSubmissionId = null;
+    let submissionsUnsubscribe = null;
+
+    // ============================================
+    // CLOCK
+    // ============================================
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('liveClock').textContent =
+            now.toLocaleDateString('hi-IN') + ' ' +
+            now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ============================================
+    // AUTH
+    // ============================================
+    auth.onAuthStateChanged(async (user) => {
+        if (user && ADMIN_EMAILS.includes(user.email)) {
+            // Valid admin
+            document.getElementById('adminLoginPage').style.display = 'none';
+            document.getElementById('adminDashboard').style.display = 'flex';
+            document.getElementById('adminName').textContent = user.email.split('@')[0];
+            document.getElementById('adminAvatar').textContent = user.email[0].toUpperCase();
+            initDashboard();
+        } else if (user) {
+            // Logged in but not admin
+            await auth.signOut();
+            showToast('❌ Aap admin nahi hain!', 'error');
+        } else {
+            document.getElementById('adminLoginPage').style.display = 'flex';
+            document.getElementById('adminDashboard').style.display = 'none';
+        }
+    });
+
+    async function adminLogin() {
+        const email = document.getElementById('adminEmail').value.trim();
+        const password = document.getElementById('adminPassword').value;
+        if (!email || !password) { showToast('❌ Email aur password daalo', 'error'); return; }
+        // Email check Firebase auth ke baad hoga
+        showLoading();
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+        } catch (e) {
+            showToast('❌ ' + (e.code === 'auth/wrong-password' ? 'Password galat hai' : 'Login fail hua'), 'error');
+        } finally { hideLoading(); }
+    }
+
+    async function adminLogout() {
+        if (submissionsUnsubscribe) submissionsUnsubscribe();
+        await auth.signOut();
+    }
+
+    // ============================================
+    // INIT DASHBOARD
+    // ============================================
+    function initDashboard() {
+        listenToSubmissions();
+        loadCampaigns();
+        loadUsers();
+        loadStats();
+    }
+
+    // ============================================
+    // REAL-TIME SUBMISSIONS LISTENER
+    // ============================================
+    function listenToSubmissions() {
+        if (submissionsUnsubscribe) submissionsUnsubscribe();
+        submissionsUnsubscribe = db.collection('submissions')
+            .orderBy('submittedAt', 'desc')
+            .onSnapshot(snap => {
+                allSubmissions = [];
+                snap.forEach(doc => allSubmissions.push({ id: doc.id, ...doc.data() }));
+                renderSubmissionsTable();
+                renderOverviewPending();
+                updateStats();
+            }, err => console.error(err));
+    }
+
+    // ============================================
+    // STATS
+    // ============================================
+    async function loadStats() {
+        // Users count
+        const usersSnap = await db.collection('users').where('role', '!=', 'admin').get().catch(() =>
+            db.collection('users').get()
+        );
+        document.getElementById('statTotalUsers').textContent = usersSnap.size;
+    }
+
+    function updateStats() {
+        const total = allSubmissions.length;
+        const pending = allSubmissions.filter(s => s.status === 'pending').length;
+        const approved = allSubmissions.filter(s => s.status === 'approved').length;
+        const totalPaid = allSubmissions
+            .filter(s => s.status === 'approved')
+            .reduce((sum, s) => sum + (s.reward || 0), 0);
+
+        document.getElementById('statTotalSubs').textContent = total;
+        document.getElementById('statPendingCount').textContent = pending + ' pending';
+        document.getElementById('statApprovedSubs').textContent = approved;
+        document.getElementById('statTotalPaid').textContent = '₹' + totalPaid;
+
+        // Pending badge
+        document.getElementById('pendingBadge').textContent = pending;
+        document.getElementById('pendingBadge').style.display = pending > 0 ? 'block' : 'none';
+    }
+
+    // ============================================
+    // SUBMISSIONS TABLE
+    // ============================================
+    function filterSubmissions(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderSubmissionsTable();
+    }
+
+    function renderSubmissionsTable() {
+        const filtered = currentFilter === 'all' ? allSubmissions :
+            allSubmissions.filter(s => s.status === currentFilter);
+
+        const tbody = document.getElementById('submissionsTable');
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Koi submission nahi mili</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(s => {
+            const date = s.submittedAt ? s.submittedAt.toDate().toLocaleDateString('hi-IN') : 'N/A';
+            const initials = (s.userName || 'U').charAt(0).toUpperCase();
+            return `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">${initials}</div>
+                            <div>
+                                <div class="user-name">${s.userName || 'Unknown'}</div>
+                                <div class="user-email">${s.userEmail || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><strong>${s.campaignName}</strong></td>
+                    <td><strong>₹${s.reward}</strong></td>
+                    <td><span class="status-pill status-${s.status}">${s.status.toUpperCase()}</span></td>
+                    <td>${date}</td>
+                    <td>
+                        ${s.screenshotUrl ?
+                            `<button class="action-btn btn-view" onclick="openScreenshotModal('${s.id}')">📸 Dekho</button>` :
+                            '<span style="color:var(--gray);font-size:12px;">No file</span>'
+                        }
+                    </td>
+                    <td>
+                        ${s.status === 'pending' ? `
+                            <button class="action-btn btn-approve" onclick="approveSubmission('${s.id}')">✅</button>
+                            <button class="action-btn btn-reject" onclick="rejectSubmission('${s.id}')">❌</button>
+                        ` : `<span style="color:var(--gray);font-size:12px;">Done</span>`}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderOverviewPending() {
+        const pending = allSubmissions.filter(s => s.status === 'pending').slice(0, 8);
+        const tbody = document.getElementById('overviewPendingTable');
+        if (pending.length === 0) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="6">✅ Koi pending submission nahi! Sab clear hai.</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = pending.map(s => {
+            const date = s.submittedAt ? s.submittedAt.toDate().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+            const initials = (s.userName || 'U').charAt(0).toUpperCase();
+            return `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">${initials}</div>
+                            <div>
+                                <div class="user-name">${s.userName || 'Unknown'}</div>
+                                <div class="user-email">${s.userPhone || s.userEmail || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${s.campaignName}</td>
+                    <td><strong>₹${s.reward}</strong></td>
+                    <td>${date}</td>
+                    <td>
+                        ${s.screenshotUrl ?
+                            `<button class="action-btn btn-view" onclick="openScreenshotModal('${s.id}')">📸 Dekho</button>` :
+                            '<span style="color:var(--gray);font-size:12px;">—</span>'
+                        }
+                    </td>
+                    <td>
+                        <button class="action-btn btn-approve" onclick="approveSubmission('${s.id}')">✅ Approve</button>
+                        <button class="action-btn btn-reject" onclick="rejectSubmission('${s.id}')">❌ Reject</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // ============================================
+    // APPROVE / REJECT
+    // ============================================
+    async function approveSubmission(id) {
+        const submission = allSubmissions.find(s => s.id === id);
+        if (!submission) return;
+        if (!confirm(`✅ "${submission.userName}" ka submission approve karo? ₹${submission.reward} unke wallet mein jayega.`)) return;
+        showLoading();
+        try {
+            const batch = db.batch();
+            batch.update(db.collection('submissions').doc(id), {
+                status: 'approved',
+                reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            batch.update(db.collection('users').doc(submission.userId), {
+                wallet: firebase.firestore.FieldValue.increment(submission.reward),
+                totalEarned: firebase.firestore.FieldValue.increment(submission.reward),
+                approvedCount: firebase.firestore.FieldValue.increment(1)
+            });
+            await batch.commit();
+            showToast('✅ Approved! ₹' + submission.reward + ' wallet mein add hua.', 'success');
+            closeScreenshotModal();
+        } catch (e) {
+            showToast('❌ Error: ' + e.message, 'error');
+        } finally { hideLoading(); }
+    }
+
+    async function rejectSubmission(id, note = '') {
+        const submission = allSubmissions.find(s => s.id === id);
+        if (!submission) return;
+        if (!note && !confirm(`❌ "${submission.userName}" ka submission reject karo?`)) return;
+        showLoading();
+        try {
+            await db.collection('submissions').doc(id).update({
+                status: 'rejected',
+                reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                adminNote: note || ''
+            });
+            showToast('❌ Submission rejected.', 'info');
+            closeScreenshotModal();
+        } catch (e) {
+            showToast('❌ Error: ' + e.message, 'error');
+        } finally { hideLoading(); }
+    }
+
+    // ============================================
+    // SCREENSHOT MODAL
+    // ============================================
+    function openScreenshotModal(id) {
+        const s = allSubmissions.find(sub => sub.id === id);
+        if (!s) return;
+        currentModalSubmissionId = id;
+        document.getElementById('modalUserName').textContent = s.userName + ' (' + (s.userPhone || s.userEmail || '') + ')';
+        document.getElementById('modalCampaign').textContent = s.campaignName;
+        document.getElementById('modalReward').textContent = s.reward;
+        document.getElementById('modalScreenshot').src = s.screenshotUrl;
+        document.getElementById('modalNote').value = '';
+        document.getElementById('screenshotModal').classList.add('open');
+    }
+
+    function closeScreenshotModal() {
+        document.getElementById('screenshotModal').classList.remove('open');
+        currentModalSubmissionId = null;
+    }
+
+    function approveFromModal() {
+        if (currentModalSubmissionId) approveSubmission(currentModalSubmissionId);
+    }
+
+    function rejectFromModal() {
+        const note = document.getElementById('modalNote').value;
+        if (currentModalSubmissionId) rejectSubmission(currentModalSubmissionId, note);
+    }
+
+    // ============================================
+    // CAMPAIGNS
+    // ============================================
+    async function loadCampaigns() {
+        const snap = await db.collection('campaigns').orderBy('createdAt', 'desc').get();
+        const tbody = document.getElementById('campaignsTable');
+        if (snap.empty) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Koi campaign nahi. Naya add karein!</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = '';
+        snap.forEach(doc => {
+            const c = doc.data();
+            const review = c.reviewText || '';
+            const preview = review.length > 40 ? review.substring(0, 40) + '...' : review;
+            const submissionsCount = allSubmissions.filter(s => s.campaignId === doc.id).length;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <span style="font-size:20px; margin-right:8px;">${c.icon || '📱'}</span>
+                    <strong>${c.name}</strong>
+                </td>
+                <td><strong style="color:var(--primary);">₹${c.reward}</strong></td>
+                <td style="max-width:180px; font-size:12px; color:var(--gray);">${preview}</td>
+                <td>
+                    <span class="status-pill ${c.active ? 'status-approved' : 'status-rejected'}">
+                        ${c.active ? '✅ Active' : '⏸️ Inactive'}
+                    </span>
+                </td>
+                <td>${submissionsCount}</td>
+                <td>
+                    <button class="action-btn btn-view" onclick="openCampaignModal('${doc.id}')">✏️ Edit</button>
+                    <button class="action-btn btn-reject" onclick="deleteCampaign('${doc.id}', '${c.name}')">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function openCampaignModal(id = null) {
+        editingCampaignId = id;
+        document.getElementById('campaignModalTitle').textContent = id ? '✏️ Campaign Edit Karen' : '🔥 Naya Campaign';
+        if (id) {
+            db.collection('campaigns').doc(id).get().then(doc => {
+                const c = doc.data();
+                document.getElementById('cName').value = c.name || '';
+                document.getElementById('cIcon').value = c.icon || '';
+                document.getElementById('cReward').value = c.reward || '';
+                document.getElementById('cSlots').value = c.slots || '';
+                document.getElementById('cPlaystore').value = c.playstoreLink || '';
+                document.getElementById('cReviewText').value = c.reviewText || '';
+                document.getElementById('cInstructions').value = c.instructions || '';
+                document.getElementById('cActive').checked = c.active !== false;
+            });
+        } else {
+            document.getElementById('cName').value = '';
+            document.getElementById('cIcon').value = '📱';
+            document.getElementById('cReward').value = '';
+            document.getElementById('cSlots').value = '';
+            document.getElementById('cPlaystore').value = '';
+            document.getElementById('cReviewText').value = '';
+            document.getElementById('cInstructions').value = '';
+            document.getElementById('cActive').checked = true;
+        }
+        document.getElementById('campaignModal').classList.add('open');
+    }
+
+    function closeCampaignModal() {
+        document.getElementById('campaignModal').classList.remove('open');
+        editingCampaignId = null;
+    }
+
+    async function saveCampaign() {
+        const name = document.getElementById('cName').value.trim();
+        const icon = document.getElementById('cIcon').value.trim();
+        const reward = parseInt(document.getElementById('cReward').value);
+        const slots = document.getElementById('cSlots').value ? parseInt(document.getElementById('cSlots').value) : null;
+        const playstoreLink = document.getElementById('cPlaystore').value.trim();
+        const reviewText = document.getElementById('cReviewText').value.trim();
+        const instructions = document.getElementById('cInstructions').value.trim();
+        const active = document.getElementById('cActive').checked;
+
+        if (!name || !reward || !reviewText) {
+            showToast('❌ App name, reward aur review text zaroor bharo', 'error');
+            return;
+        }
+
+        const data = {
+            name, icon: icon || '📱', reward, reviewText, active,
+            playstoreLink: playstoreLink || '',
+            instructions: instructions || '',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (slots) data.slots = slots;
+
+        showLoading();
+        try {
+            if (editingCampaignId) {
+                await db.collection('campaigns').doc(editingCampaignId).update(data);
+                showToast('✅ Campaign update ho gaya!', 'success');
+            } else {
+                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                await db.collection('campaigns').add(data);
+                showToast('✅ Naya campaign add ho gaya!', 'success');
+            }
+            closeCampaignModal();
+            loadCampaigns();
+        } catch (e) {
+            showToast('❌ Error: ' + e.message, 'error');
+        } finally { hideLoading(); }
+    }
+
+    async function deleteCampaign(id, name) {
+        if (!confirm(`⚠️ "${name}" campaign delete karna chahte ho? Yeh undo nahi hoga.`)) return;
+        showLoading();
+        try {
+            await db.collection('campaigns').doc(id).delete();
+            showToast('🗑️ Campaign delete ho gaya', 'info');
+            loadCampaigns();
+        } catch (e) {
+            showToast('❌ Error: ' + e.message, 'error');
+        } finally { hideLoading(); }
+    }
+
+    // ============================================
+    // USERS
+    // ============================================
+    async function loadUsers() {
+        const snap = await db.collection('users').orderBy('createdAt', 'desc').get();
+        document.getElementById('usersCount').textContent = snap.size + ' users';
+
+        // Populate payout dropdown
+        const payoutSelect = document.getElementById('payoutUserSelect');
+        payoutSelect.innerHTML = '<option value="">-- User Choose Karein --</option>';
+
+        const tbody = document.getElementById('usersTable');
+        const payoutsBody = document.getElementById('payoutsTable');
+        tbody.innerHTML = '';
+        payoutsBody.innerHTML = '';
+
+        if (snap.empty) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Koi user registered nahi hai</td></tr>`;
+            return;
+        }
+
+        snap.forEach(doc => {
+            const u = doc.data();
+            const date = u.createdAt ? u.createdAt.toDate().toLocaleDateString('hi-IN') : 'N/A';
+            const initials = (u.name || 'U').charAt(0).toUpperCase();
+
+            // Users table
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar">${initials}</div>
+                        <div>
+                            <div class="user-name">${u.name || 'Unknown'}</div>
+                            <div class="user-email">${u.email || ''}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${u.phone || '—'}</td>
+                <td><strong style="color:var(--primary);">₹${u.wallet || 0}</strong></td>
+                <td>₹${u.totalEarned || 0}</td>
+                <td>${u.submissionsCount || 0} / ${u.approvedCount || 0} approved</td>
+                <td>${date}</td>
+                <td>
+                    <button class="action-btn btn-view" onclick="viewUserSubmissions('${u.email}')">📋</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+
+            // Payout dropdown
+            const opt = document.createElement('option');
+            opt.value = doc.id;
+            opt.textContent = `${u.name} (₹${u.wallet || 0} wallet)`;
+            payoutSelect.appendChild(opt);
+
+            // Payouts table
+            const pr = document.createElement('tr');
+            pr.innerHTML = `
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar">${initials}</div>
+                        <div>
+                            <div class="user-name">${u.name}</div>
+                            <div class="user-email">${u.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><strong style="color:var(--primary);">₹${u.wallet || 0}</strong></td>
+                <td>₹${u.totalEarned || 0}</td>
+                <td>${u.approvedCount || 0} reviews</td>
+            `;
+            payoutsBody.appendChild(pr);
+        });
+    }
+
+    function viewUserSubmissions(email) {
+        currentFilter = 'all';
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.filter-btn').classList.add('active');
+        showPage('pageSubmissions', document.getElementById('navSubmissions'));
+        // Filter by email (rough filter in UI)
+        showToast('💡 User: ' + email + ' — sab submissions dekh rahe hain', 'info');
+    }
+
+    // ============================================
+    // MANUAL PAYOUT
+    // ============================================
+    async function processManualPayout() {
+        const userId = document.getElementById('payoutUserSelect').value;
+        const amount = parseInt(document.getElementById('payoutAmount').value);
+        const action = document.getElementById('payoutAction').value;
+        const note = document.getElementById('payoutNote').value;
+
+        if (!userId) { showToast('❌ User select karo', 'error'); return; }
+        if (!amount || amount <= 0) { showToast('❌ Valid amount daalo', 'error'); return; }
+        if (!confirm(`Are you sure? ${action.toUpperCase()} ₹${amount}`)) return;
+
+        showLoading();
+        try {
+            let updateData = {};
+            if (action === 'add') {
+                updateData.wallet = firebase.firestore.FieldValue.increment(amount);
+                updateData.totalEarned = firebase.firestore.FieldValue.increment(amount);
+            } else if (action === 'deduct') {
+                updateData.wallet = firebase.firestore.FieldValue.increment(-amount);
+            } else {
+                updateData.wallet = amount;
+            }
+            await db.collection('users').doc(userId).update(updateData);
+            showToast('✅ Wallet update ho gaya!', 'success');
+            loadUsers();
+        } catch (e) {
+            showToast('❌ Error: ' + e.message, 'error');
+        } finally { hideLoading(); }
+    }
+
+    // ============================================
+    // NAVIGATION
+    // ============================================
+    function showPage(pageId, navEl) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+
+        document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+        if (navEl) navEl.classList.add('active');
+
+        const titles = {
+            'pageOverview': ['Dashboard', 'RewardHub ka poora overview'],
+            'pageSubmissions': ['Submissions', 'Users ke screenshot review karo'],
+            'pageCampaigns': ['Campaigns', 'Apps manage karo — review text, reward set karo'],
+            'pageUsers': ['Users', 'Registered users ki list'],
+            'pagePayouts': ['Payouts', 'Wallet manually adjust karo']
+        };
+
+        const t = titles[pageId] || ['Admin', ''];
+        document.getElementById('topBarTitle').textContent = t[0];
+        document.getElementById('topBarSub').textContent = t[1];
+
+        // Reload if needed
+        if (pageId === 'pageCampaigns') loadCampaigns();
+        if (pageId === 'pageUsers' || pageId === 'pagePayouts') loadUsers();
+    }
+
+    // ============================================
+    // UTILITIES
+    // ============================================
+    function showLoading() { document.getElementById('loadingOverlay').classList.add('active'); }
+    function hideLoading() { document.getElementById('loadingOverlay').classList.remove('active'); }
+
+    function showToast(msg, type = 'info') {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3500);
+    }
+</script>
+</body>
+</html>
